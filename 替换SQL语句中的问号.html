@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"> 
+<title></title> 
+</head>
+<style>
+input[type=text], select {
+  width: 100%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+/* 4CAF50 */
+input[type=submit] {
+  width: 100%;
+  background-color: #2a1f8b;
+  color: white;
+  padding: 14px 20px;
+  margin: 8px 0;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+input[type=submit]:hover {
+  background-color: #45a049;
+}
+
+div {
+  border-radius: 5px;
+  background-color: #f2f2f2;
+  padding: 20px;
+}
+</style>
+<body>
+
+    <h3>替换SQL语句中问号</h3>
+
+    <div>
+        <label for="inputSQL">请输入SQL语句：</label>
+        <input type="text" id="inputSQL" placeholder="SQL语句">
+
+        <label for="SQLValue">请输入SQL语句中的值：</label>
+        <input type="text" id="SQLValue" placeholder="SQL语句的值">
+
+        <label for="result" id="test">转换结果</label>
+        <input type="text" id="result" placeholder="转换结果...">
+
+        <input type="submit" value="转换" onclick="show()">
+    </div>
+
+    <!-- 该函数使用时，SQL语句中的值不能有小括号'..(..)..'，
+      如遇到这种情况，请手动删除括号，替换完成后再输入括号 -->
+    <script type="text/javascript">
+        function show() {
+            
+            var result = document.getElementById('inputSQL').value
+            var matchList = document.getElementById('SQLValue').value.split(",")
+
+            // \( 为匹配 左括号(
+            // ([^)]+) 为匹配一个或多个非右括号的字符
+            // \) 为匹配右括号
+            // 连起来就是：匹配第一个括号中一个或多个字符
+            var regExp_type = /\(([^)]+)\)/
+
+            // ([^(]+) 为匹配1个或多个非左括号的字符
+            // \( 为匹配左括号
+            // 连起来就是：匹配第一个左括号左边的字符
+            var regExp_value = /([^(]+)\(/
+            var previous = ''
+
+            // 检测使用逗号分割后的每个元素
+            for (index in matchList) {
+                value = ''
+
+                // 如果该元素为null，则该元素应直接被替换进SQL语句中
+                if (matchList[index].trim() == 'null') {
+                  value = matchList[index].trim()
+                } else {
+                  // 在该元素中寻找是否有括号元素：(...)
+                  var typeTest = regExp_type.exec(matchList[index])
+                  // 如果没有括号元素，且previous中没有值，则该元素作为起始值
+                  if (typeTest == null && previous == '') {
+                    previous = matchList[index]
+                    continue
+                  }
+                  // 如果没有括号元素，且previous中有值，则该元素追加到该值中
+                  if (typeTest == null && previous != '') {
+                    previous = previous + ',' + matchList[index]
+                    continue
+                  }
+                  // 如果有括号元素，检测previous是否有值，有则过继该值，成为一个完整元素
+                  if (typeTest != null && previous != '') {
+                    matchList[index] = previous + ',' + matchList[index]
+                  }
+                  // 获取括号中的值、括号左边的值，这两个值为执行正则匹配后结果中的分组1
+                  var type = regExp_type.exec(typeTest)[1].trim()
+                  value = regExp_value.exec(matchList[index])[1].trim()
+                  if (type == "String") {
+                    value = "'" + value + "'"
+                  }
+                }
+                result = result.replace("?", value)
+                // 执行完一次替换后，previous的值应替换成''
+                previous = ''
+            }
+            document.getElementById('result').setAttribute('value', result)
+            document.getElementById('test').innerText = '转换成功...'
+            setTimeout("document.getElementById('test').innerText = '转换结果'", 300)
+        }
+    </script>
+</body>
+</html>
